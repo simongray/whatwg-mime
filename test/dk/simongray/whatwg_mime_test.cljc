@@ -1,9 +1,11 @@
 (ns dk.simongray.whatwg-mime-test
   "The functions of the root namespace beyond what WPT's data checks, with
   the Content-Types that wary-fetch read wrongly."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing]]
             [dk.simongray.whatwg-mime :as mime]
             [dk.simongray.whatwg-mime.impl.labels :as labels]
+            [dk.simongray.whatwg-mime.octets :refer [octets]]
             [dk.simongray.whatwg-mime.test-data :as test-data]))
 
 (deftest parse
@@ -59,6 +61,43 @@
                    [(get encoding "name") (set (get encoding "labels"))]))
            (update-vals labels/encodings set))
         "the table of the Encoding Standard")))
+
+(defn- text-of
+  "The text of the code points `cps`, each in the Basic Multilingual Plane."
+  [cps]
+  (apply str (map #?(:clj #(char %) :cljs #(.fromCharCode js/String %)) cps)))
+
+(defn- windows-1252-index
+  "The code point of each pointer in the text `index`, the Encoding
+  Standard's index-windows-1252.txt."
+  [index]
+  (into {}
+        (for [line  (str/split-lines index)
+              :when (re-find #"^\s*\d" line)
+              :let  [[pointer code-point] (str/split (str/trim line) #"\s+")]]
+          [(parse-long pointer)
+           #?(:clj  (Long/parseLong (subs code-point 2) 16)
+              :cljs (js/parseInt (subs code-point 2) 16))])))
+
+(deftest decode
+  (when-let [index (some-> (test-data/text "encoding/index-windows-1252.txt") windows-1252-index)]
+    (is (= (text-of (for [x (range 256)] (if (< x 0x80) x (index (- x 0x80)))))
+           (mime/decode (apply octets (range 256)) "latin1"))
+        "windows-1252 by the index of the Encoding Standard, on every platform"))
+  (testing "a byte order mark overrides the label and goes, but a second one stays"
+    (is (= "hi" (mime/decode (octets [0xEF 0xBB 0xBF] "hi") "latin1")))
+    (is (= "hi" (mime/decode (octets [0xFF 0xFE] "h" 0 "i" 0) "utf-8")))
+    (is (= "hi" (mime/decode (octets [0xFE 0xFF] 0 "h" 0 "i") nil)))
+    (is (= "﻿x" (mime/decode (octets [0xEF 0xBB 0xBF 0xEF 0xBB 0xBF] "x") nil))))
+  (testing "UTF-8 for no label, or one of no encoding"
+    (is (= "å" (mime/decode (octets [0xC3 0xA5]) nil)))
+    (is (= "å" (mime/decode (octets [0xC3 0xA5]) "nonsense"))))
+  (testing "an encoding that Java knows by another name"
+    (is (= "Blåbær" (mime/decode (octets "Bl" 0x8C "b" 0xBE "r") "x-mac-roman"))))
+  (testing "a label of the replacement encoding, as one U+FFFD"
+    (is (= "�" (mime/decode (octets "<b>hi</b>") "iso-2022-kr")))
+    (is (= "" (mime/decode (octets) "iso-2022-kr"))))
+  (is (= "" (mime/decode nil "utf-8")) "no bytes"))
 
 (deftest valid?
   (doseq [s ["text/html" "text/html; charset=utf-8" "text/html;charset=\"a \\\"b\\\"\""

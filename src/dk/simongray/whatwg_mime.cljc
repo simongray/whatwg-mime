@@ -14,6 +14,7 @@
   Every function that takes a MIME type also takes its text, and treats
   text that doesn't parse as nil."
   (:require [clojure.string :as str]
+            [dk.simongray.whatwg-mime.impl.decoding :as decoding]
             [dk.simongray.whatwg-mime.impl.labels :as labels]
             [dk.simongray.whatwg-mime.impl.parser :as parser]
             [dk.simongray.whatwg-mime.patterns :as patterns]))
@@ -78,6 +79,26 @@
   or nil."
   [m]
   (some-> (charset m) label->encoding))
+
+;; Beyond the MIME Sniffing Standard: a convenience that decodes the text of
+;; a charset, by the Encoding Standard's decode (section 6) as far as the
+;; platform's decoders allow
+(defn decode
+  "The text of the bytes `b` in the encoding that `label` names, e.g.
+  latin1, or in UTF-8 when it names none. A byte order mark overrides the
+  label and goes.
+
+  This is a convenience, and no part of the MIME Sniffing Standard. The
+  library decodes windows-1252, the encoding of Latin-1 and ASCII, the same
+  way everywhere. Other encodings go to the platform's decoders
+  (java.nio.charset on the JVM and TextDecoder in JavaScript), which can
+  differ from the Encoding Standard in a few corners. An encoding that the
+  platform lacks, e.g. ISO-8859-10 on the JVM, decodes as UTF-8.
+
+      (decode (.getBytes \"Blåbær\" \"windows-1252\") \"latin1\")
+      ;; => \"Blåbær\""
+  [b label]
+  (decoding/decode b (label->encoding label)))
 
 ;; MIME Sniffing, section 4.3
 (defn valid?

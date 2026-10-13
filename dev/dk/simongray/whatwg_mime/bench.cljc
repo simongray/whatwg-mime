@@ -59,7 +59,9 @@
      :mp3       #(patterns/audio-or-video-type mp3)
      :text      #(mime/sniff text "text/plain")
      :binary    #(mime/sniff binary nil)
-     :feed      #(patterns/feed-type feed)}))
+     :feed      #(patterns/feed-type feed)
+     :latin-1   #(mime/decode text "latin1")
+     :utf-8     #(mime/decode text "utf-8")}))
 
 #?(:cljs
    (defn- mean

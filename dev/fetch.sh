@@ -1,7 +1,7 @@
 #!/bin/sh
-# Download the test data of web-platform-tests and the labels of the
-# Encoding Standard, at the versions that the library follows, into
-# dev-resources/.
+# Download the test data of web-platform-tests, and the labels and the
+# windows-1252 index of the Encoding Standard, at the versions that the
+# library follows, into dev-resources/.
 set -eu
 
 wpt=c7bbc237dc396576b7486224a40a2ae2fa6d1141
@@ -31,5 +31,7 @@ for f in binary-data.bin png-image.png test-file.zip html-content.html; do
   done
 done
 
-curl -sSfL -o dev-resources/encoding/encodings.json \
-  "https://raw.githubusercontent.com/whatwg/encoding/$encoding/encodings.json"
+for f in encodings.json index-windows-1252.txt; do
+  curl -sSfL -o "dev-resources/encoding/$f" \
+    "https://raw.githubusercontent.com/whatwg/encoding/$encoding/$f"
+done

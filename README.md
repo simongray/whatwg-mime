@@ -35,7 +35,7 @@ The library needs Clojure 1.11+ and Java 11+. Add the latest release from
 your `deps.edn`:
 
 ```clojure
-dk.simongray/whatwg-mime {:mvn/version "0.1.0"}
+dk.simongray/whatwg-mime {:mvn/version "0.2.0"}
 ```
 
 For changes that aren't released yet, use the SHA of the latest commit on
@@ -73,9 +73,17 @@ name of the encoding that it stands for:
 ```
 
 For a label on its own, e.g. from a meta tag, use `mime/label->encoding`.
-In ClojureScript, `TextDecoder` takes the name of an encoding. On the JVM,
-most names are those of Java charsets too, but macintosh is x-MacRoman,
-and the JDK lacks a few (e.g. ISO-8859-10).
+To decode bytes by a label, use `mime/decode`, a convenience beyond the
+standard:
+
+```clojure
+(mime/decode (.getBytes "Blåbær" "windows-1252") "latin1")
+;; => "Blåbær"
+```
+
+It decodes windows-1252, the encoding of Latin-1 and ASCII, the same way
+everywhere. Other encodings go to the platform's decoders, which differ
+from the Encoding Standard in a few corners.
 
 The groups of the standard are predicates, e.g. `mime/html?`, `mime/xml?`,
 `mime/json?`, `mime/javascript?`, `mime/image?` and `mime/audio-or-video?`:
