@@ -72,9 +72,10 @@
     (when (< i n)
       (+ i (vint-size b n i)))))
 
-;; MIME Sniffing, section 6.2.2
-;; TODO: offer the fixes of vint-size and padded-webm? on whatwg/mimesniff#146,
-;; and a pull request only if an editor asks for one.
+;; MIME Sniffing, section 6.2.2. The standard stops one byte early, so that
+;; webm can't end the bytes, though browsers accept that (whatwg/mimesniff#93).
+;; TODO: offer the fixes of vint-size, padded-webm? and webm? on
+;; whatwg/mimesniff#146, and a pull request only if an editor asks for one.
 (defn webm?
   "Whether the first `n` bytes of `b` start with an EBML header whose
   DocType, in its first 38 bytes, is webm."
@@ -89,9 +90,9 @@
            (bytes/bytes-at? b n i [0x42 0x82])
            (let [data (doctype-data b n i)]
              (cond
-               (or (nil? data) (>= data (- n 4))) false
-               (padded-webm? b n data)            true
-               :else                              (recur (inc (long data)))))
+               (or (nil? data) (> data (- n 4))) false
+               (padded-webm? b n data)           true
+               :else                             (recur (inc (long data)))))
 
            :else
            (recur (inc i))))))
@@ -135,9 +136,11 @@
        (not= 3 (bits (bytes/byte-at b (+ s 2)) 0x0C 2))))
 
 ;; MIME Sniffing, section 6.2.3, "parse an mp3 frame" and "compute an mp3
-;; frame size". The standard swaps the bit rates of MPEG-1 and MPEG-2.5, and
-;; gives the scale of 72 to the reserved version 1 rather than to MPEG-2 and
-;; 2.5 (ISO/IEC 11172-3 and 13818-3).
+;; frame size". The standard swaps the two tables of bit rates, gives the
+;; scale of 72 to the reserved version 1 rather than to MPEG-2 and 2.5, and
+;; divides by the sample rate before halving or quartering it. This follows
+;; Firefox's mp3sniff.c, which the steps come from, and like it tells MPEG-1
+;; by the low bit of the version.
 (defn- frame-size
   "The size in bytes of the MPEG audio layer III frame whose header is at
   `s` in the bytes `b`."
@@ -145,7 +148,7 @@
   (let [x           (bytes/byte-at b (+ s 1))
         y           (bytes/byte-at b (+ s 2))
         version     (bits x 0x18 3)
-        mpeg-1?     (== 3 version)
+        mpeg-1?     (odd? version)
         bit-rate    (nth (if mpeg-1? mpeg-1-bit-rates mpeg-2-bit-rates) (bits y 0xF0 4))
         sample-rate (quot (nth sample-rates (bits y 0x0C 2))
                           (case version 2 2 0 4 1))]

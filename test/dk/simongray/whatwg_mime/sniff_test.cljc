@@ -72,6 +72,7 @@
           ["MP4 whose box size isn't a multiple of 4" [[0 0 0 13] "ftypmp42" [0 0 0 0 0]] nil]
           ["WebM" (ebml "webm" 0) "video/webm"]
           ["WebM, padded" (ebml "webm" 2) "video/webm"]
+          ["WebM that ends the bytes" [[0x1A 0x45 0xDF 0xA3 0x81 0x42 0x82 0x84] "webm"] "video/webm"]
           ["Matroska" (ebml "matroska" 0) nil]
           ["MP3 of MPEG-1" (frames [0xFF 0xFB 0x90 0x00] 417) "audio/mpeg"]
           ["MP3 of MPEG-1, padded" (frames [0xFF 0xFB 0x92 0x00] 418) "audio/mpeg"]
