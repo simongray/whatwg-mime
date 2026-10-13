@@ -23,9 +23,9 @@ the answer that a browser would, as plain data.
   and in browsers. It needs nothing but Clojure and passes the MIME type
   tests of [web-platform-tests](https://github.com/web-platform-tests/wpt/tree/master/mimesniff).
 
-> This library is meant to replace the MIME type code of wary-fetch,
-> websub-clj and podcast-clj, which each read MIME types their own way.
-> Like them, it was developed with assistance from frontier LLMs.
+> This library replaces the MIME type code of wary-fetch, websub-clj and
+> podcast-clj, which each used to read MIME types their own way. Like
+> them, it was developed with assistance from frontier LLMs.
 
 Getting started
 ---------------
@@ -200,6 +200,7 @@ under `impl`:
 - `impl.parser`, which parses and writes MIME types and splits the values
   of a header
 - `impl.labels`, the labels of the Encoding Standard
+- `impl.decoding`, the decoders behind `mime/decode`
 - `impl.bytes`, the bytes on each platform
 - `impl.media`, the signatures of MP4, WebM and MP3
 - `impl.feed`, the rules for feeds that the standard dropped

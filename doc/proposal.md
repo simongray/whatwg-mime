@@ -23,6 +23,24 @@ Two findings change the brief:
   standard. No platform exposes its sniffing.
 
 
+Since the proposal
+------------------
+
+The library follows this proposal, apart from a few changes made while
+building it:
+
+- The `sniff` namespace is called `patterns`, since in ClojureScript it
+  would clash with `mime/sniff`.
+- Decoding moved in after all, as `mime/decode`, a convenience beyond the
+  standard. wary-fetch and qname-hiccup both decode by a charset label,
+  and this way windows-1252 decodes the same on every platform. For a
+  label on its own, e.g. from a meta tag, there's `mime/label->encoding`.
+- wary-fetch removed `headers/media-type` and `headers/charset` in 0.6.0,
+  since 0.5.0 had already gone out with other changes.
+- podcast-clj keeps `feed-document?`, since discovery has the decoded
+  text rather than the bytes.
+
+
 Scope
 -----
 
