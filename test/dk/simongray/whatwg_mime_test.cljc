@@ -45,7 +45,11 @@
   (is (= "replacement" (mime/encoding "text/html; charset=iso-2022-kr")))
   (is (nil? (mime/encoding "text/html; charset=Koi8-r")) "the Kelvin sign isn't a k")
   (is (nil? (mime/encoding "text/html; charset=utf-7")))
-  (is (nil? (mime/encoding "text/html"))))
+  (is (nil? (mime/encoding "text/html")))
+  (testing "a label on its own"
+    (is (= "UTF-16LE" (mime/label->encoding "unicode")))
+    (is (= "macintosh" (mime/label->encoding " X-Mac-Roman\n")))
+    (is (nil? (mime/label->encoding nil)))))
 
 (deftest labels
   (when-let [data (test-data/json "encoding/encodings.json")]

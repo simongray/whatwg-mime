@@ -65,13 +65,19 @@
   [m]
   (some-> (->mime m) (parameter "charset")))
 
-;; Fetch Standard, section 3.5, "legacy extract an encoding", and Encoding
-;; Standard, section 4.2, "get an encoding"
+;; Encoding Standard, section 4.2, "get an encoding"
+(defn label->encoding
+  "The name of the encoding that the text `label` names, e.g. windows-1252
+  for latin1, or nil."
+  [label]
+  (some-> label str labels/encoding))
+
+;; Fetch Standard, section 3.5, "legacy extract an encoding"
 (defn encoding
-  "The encoding that the charset of the MIME type `m` names, e.g.
-  windows-1252 for latin1, or nil."
+  "The name of the encoding that the charset of the MIME type `m` names,
+  or nil."
   [m]
-  (some-> (charset m) labels/encoding))
+  (some-> (charset m) label->encoding))
 
 ;; MIME Sniffing, section 4.3
 (defn valid?

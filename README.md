@@ -72,9 +72,10 @@ name of the encoding that it stands for:
 ;; => "windows-1252"
 ```
 
-In ClojureScript, `TextDecoder` takes that name. On the JVM, most names
-are those of Java charsets too, but macintosh is x-MacRoman, and the JDK
-lacks a few (e.g. ISO-8859-10).
+For a label on its own, e.g. from a meta tag, use `mime/label->encoding`.
+In ClojureScript, `TextDecoder` takes the name of an encoding. On the JVM,
+most names are those of Java charsets too, but macintosh is x-MacRoman,
+and the JDK lacks a few (e.g. ISO-8859-10).
 
 The groups of the standard are predicates, e.g. `mime/html?`, `mime/xml?`,
 `mime/json?`, `mime/javascript?`, `mime/image?` and `mime/audio-or-video?`:
