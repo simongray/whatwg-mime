@@ -65,8 +65,13 @@
 (defn bytes-at?
   "Whether the bytes `xs` come at `i` in the first `n` bytes of `b`."
   [b ^long n ^long i xs]
-  (and (<= (+ i (count xs)) n)
-       (every? true? (map-indexed #(== (byte-at b (+ i %1)) ^long %2) xs))))
+  (let [k (count xs)]
+    (and (<= (+ i k) n)
+         (loop [j 0]
+           (cond
+             (== j k)                                   true
+             (== (byte-at b (+ i j)) (long (nth xs j))) (recur (inc j))
+             :else                                      false)))))
 
 (defn ascii-at?
   "Whether the ASCII text `s` comes at `i` in the first `n` bytes of `b`."

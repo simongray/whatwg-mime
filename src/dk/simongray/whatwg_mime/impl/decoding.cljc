@@ -4,10 +4,10 @@
   that a charset names.
 
   It follows the Encoding Standard's decode (section 6), where a byte
-  order mark overrides the encoding, and decodes windows-1252 and
-  replacement itself. Every other encoding goes to the platform's decoder,
-  java.nio.charset on the JVM and TextDecoder in JavaScript, which can
-  differ from the standard's in a few corners."
+  order mark overrides the encoding. It fixes the platforms' windows-1252
+  and decodes replacement itself. Every other encoding goes to the
+  platform's decoder, java.nio.charset on the JVM and TextDecoder in
+  JavaScript, which can differ from the standard's in a few corners."
   (:require [dk.simongray.whatwg-mime.impl.bytes :as bytes]))
 
 ;; Encoding Standard, section 6, "BOM sniff"
@@ -45,20 +45,36 @@
      (.replace s (js/RegExp. "[\u0080-\u009F]" "g")
                #(.fromCharCode js/String (windows-1252-code (.charCodeAt % 0))))))
 
+#?(:clj
+   (def ^java.nio.charset.Charset java-windows-1252
+     "Java's windows-1252, which leaves five bytes of the standard's unmapped."
+     (java.nio.charset.Charset/forName "windows-1252")))
+
+#?(:clj
+   (defn- with-unmapped-bytes
+     "The text `s`, which Java's windows-1252 decoded from the bytes `b` from
+     `start`, with the character of the standard's index in place of each
+     U+FFFD."
+     [^String s b ^long start]
+     (let [cs (.toCharArray s)]
+       (dotimes [i (alength cs)]
+         (when (== 0xFFFD (int (aget cs i)))
+           (aset cs i (char (windows-1252-code (bytes/byte-at b (+ start i)))))))
+       (String. cs))))
+
 ;; Encoding Standard, section 9.1, the single-byte decoder. The platforms'
 ;; own decoders differ: Java's gives U+FFFD for five of the bytes 0x80 to
-;; 0x9F, and Node's gives the C1 controls for all of them. In JavaScript,
-;; TextDecoder with the C1 controls replaced is ten times faster than a
-;; string built by the byte, and a browser's has no C1 controls to replace
+;; 0x9F, and Node's gives the C1 controls for all of them. Fixing their text
+;; is ten times faster in JavaScript than building it by the byte, and fifty
+;; times on the JVM. A browser's TextDecoder has no C1 controls to replace
 ;; but those that the index keeps.
 (defn- windows-1252
   "The text of the bytes `b` from `start` to `end` in windows-1252."
   [b ^long start ^long end]
-  #?(:clj  (let [n  (- end start)
-                 cs (char-array n)]
-             (dotimes [i n]
-               (aset cs i (char (windows-1252-code (bytes/byte-at b (+ start i))))))
-             (String. cs))
+  #?(:clj  (let [s (String. ^bytes b (int start) (int (- end start)) java-windows-1252)]
+             (if (neg? (.indexOf s (int 0xFFFD)))
+               s
+               (with-unmapped-bytes s b start)))
      :cljs (with-windows-1252-c1
              (.decode (js/TextDecoder. "windows-1252" #js {:ignoreBOM true})
                       (.subarray b start end)))))
