@@ -10,13 +10,12 @@ Content-Type and when they work out what a response really is, so you get
 the answer that a browser would, as plain data.
 
 - **The browser's reading of a Content-Type.** The charset of
-  `text/html; x="charset=evil"; charset=utf-8` is utf-8. Of two
-  Content-Types, the last one that parses counts, as in the
+  `text/html; x="charset=evil"; charset=utf-8` is utf-8. When a response
+  has two Content-Types, the last one that parses counts, as in the
   [Fetch Standard](https://fetch.spec.whatwg.org/#content-type-header).
-- **Sniffing.** Tell HTML, XML, PDF, images, audio, video, fonts and
-  archives apart by their first bytes when the Content-Type is missing or
-  wrong. The rules for a feed served as HTML are here too, though the
-  standard has dropped them.
+- **Sniffing.** Tell HTML, XML, PDF, images, audio, video, fonts,
+  archives and feeds apart by their first bytes when the Content-Type is
+  missing or wrong.
 - **Encodings by their names on the web.** A charset of latin1 means
   windows-1252, as in every browser, and not ISO-8859-1 as on the JVM.
 - **The same results everywhere.** One codebase runs on the JVM, in Node
@@ -45,7 +44,8 @@ For changes that aren't released yet, use the SHA of the latest commit on
 MIME types
 ----------
 
-Parse a MIME type with `mime/parse`, and write it with `mime/serialize`:
+Parse a MIME type with `mime/parse`, and turn it back into text with
+`mime/serialize`:
 
 ```clojure
 (require '[dk.simongray.whatwg-mime :as mime])
@@ -61,8 +61,8 @@ For text that isn't a MIME type, `mime/parse` returns nil. The other
 functions take a MIME type or its text, e.g. `mime/essence` returns
 text/html for `"Text/HTML; charset=utf-8"`.
 
-The charset of a MIME type is a label, and `mime/encoding` returns the
-name of the encoding that it stands for:
+Each encoding has several labels, e.g. latin1 for windows-1252. Use `mime/charset` for the label in a MIME type and
+`mime/encoding` for the encoding that it stands for:
 
 ```clojure
 (mime/charset "text/html; charset=latin1")
@@ -73,31 +73,27 @@ name of the encoding that it stands for:
 ```
 
 For a label on its own, e.g. from a meta tag, use `mime/label->encoding`.
-To decode bytes by a label, use `mime/decode`, a convenience beyond the
-standard:
+To decode bytes in the encoding of a label, use `mime/decode`, which goes
+beyond the standard:
 
 ```clojure
 (mime/decode (.getBytes "Blåbær" "windows-1252") "latin1")
 ;; => "Blåbær"
 ```
 
-It decodes windows-1252, the encoding of Latin-1 and ASCII, the same way
-everywhere. Other encodings go to the platform's decoders, which differ
-from the Encoding Standard in a few corners.
+It decodes windows-1252, which browsers use for Latin-1 and ASCII, the
+same way everywhere. For other encodings it uses the platform's decoders,
+so the text can differ slightly from a browser's.
 
-The groups of the standard are predicates, e.g. `mime/html?`, `mime/xml?`,
-`mime/json?`, `mime/javascript?`, `mime/image?` and `mime/audio-or-video?`:
-
-```clojure
-(mime/xml? "application/rss+xml")
-;; => true
-```
+Each group of MIME types in the standard has a predicate, e.g.
+`mime/html?`, `mime/xml?`, `mime/json?`, `mime/javascript?`,
+`mime/image?` and `mime/audio-or-video?`.
 
 Content-Type headers
 --------------------
 
-A response can have more than one Content-Type, and browsers read them
-all. Pass the values to `mime/extract`, as a string or a vector:
+A response can have more than one Content-Type, and browsers look at all
+of them. Pass the values to `mime/extract` as a string or a vector:
 
 ```clojure
 (mime/extract ["text/plain;charset=gbk" "text/plain"])
@@ -105,15 +101,14 @@ all. Pass the values to `mime/extract`, as a string or a vector:
 ```
 
 It returns the last value that parses. When that has no charset, it takes
-the charset of an earlier value of the same type. Read
-X-Content-Type-Options with `mime/nosniff?`.
+the charset of an earlier value of the same type.
 
 Sniffing
 --------
 
-Pass the first bytes of a response to `mime/sniff`, with its
-Content-Type, to get the MIME type that a browser would treat it as. The
-bytes are a byte array on the JVM or a Uint8Array in ClojureScript:
+To get the MIME type that a browser would treat a response as, pass its
+first bytes and its Content-Type to `mime/sniff`. The bytes are a byte
+array on the JVM or a Uint8Array in ClojureScript:
 
 ```clojure
 (mime/sniff (.getBytes "<!DOCTYPE html><title>Hi</title>") nil)
@@ -126,14 +121,14 @@ bytes are a byte array on the JVM or a Uint8Array in ClojureScript:
 Only the first 1445 bytes count, so you can pass a whole body. The
 Content-Type stays as it is unless it's missing or unknown, or it's an
 image, audio or video type that the bytes contradict. HTML and XML always
-stay. When X-Content-Type-Options says nosniff, pass `{:no-sniff? true}`
-too.
+stay. When X-Content-Type-Options says nosniff, which `mime/nosniff?`
+checks, pass `{:no-sniff? true}` too.
 
-The [`patterns`](src/dk/simongray/whatwg_mime/patterns.cljc) namespace
-holds the tables of the standard, for when you know what you're looking
-for. Its `audio-or-video-type` finds MP3, MP4, WebM, Ogg and WAV files
-whatever their Content-Type, and `feed-type` finds an RSS or Atom feed
-served as HTML:
+When you know what kind of resource to expect, use the tables of the
+standard in the [`patterns`](src/dk/simongray/whatwg_mime/patterns.cljc)
+namespace. For example, `audio-or-video-type` finds MP3, MP4, WebM, Ogg
+and WAV files whatever their Content-Type, and `feed-type` finds an RSS
+or Atom feed served as HTML:
 
 ```clojure
 (require '[dk.simongray.whatwg-mime.patterns :as patterns])
@@ -142,14 +137,14 @@ served as HTML:
 ;; => "application/rss+xml"
 ```
 
-The standard dropped those rules for feeds in 2024, since no browser
-follows them any more, but a crawler still needs them.
+The standard dropped its rules for feeds in 2024, because browsers no
+longer follow them. Crawlers still need them.
 
 Valid MIME types
 ----------------
 
 Like browsers, the parser is lenient: it drops a parameter that it can't
-read rather than fail. To check a MIME type that someone else wrote, use
+parse rather than fail. To check a MIME type that someone else wrote, use
 `mime/valid?`, which follows the grammar of HTTP:
 
 ```clojure
@@ -160,22 +155,21 @@ read rather than fail. To check a MIME type that someone else wrote, use
 ;; => false
 ```
 
-The standard names no validation errors, so the library can't say what's
-wrong.
+The standard defines no validation errors, so `mime/valid?` can't say
+what's wrong.
 
 Where the library departs from the standard
 -------------------------------------------
 
-- **The Content-Type as Fetch reads it.** Sniffing starts from the type
-  that `mime/extract` returns rather than from the last Content-Type as
-  it is, as browsers do.
+- **The Content-Type as Fetch reads it.** Like browsers, sniffing starts
+  from the type that `mime/extract` returns, not from the last
+  Content-Type as it's written.
 - **Every type is supported.** The standard sniffs an image, audio or
-  video type only when the browser can play or show it. A library does
-  neither, so it sniffs them all.
-- **MP3 and WebM.** As the standard writes them, its steps for MP3
-  without ID3 and for WebM reject the media files of WPT. The library
-  follows what they evidently mean and cites the open issues of the
-  standard.
+  video type only when the browser supports it. Outside a browser, the
+  library sniffs them all.
+- **MP3 and WebM.** The standard's steps for WebM and for MP3 without ID3
+  reject WPT's own media files. The library follows what the steps
+  evidently mean and cites the open issues.
 
 Development
 -----------
@@ -190,15 +184,15 @@ clojure -M:cljs release bench && node target/bench.js # benchmarks in Node
 ```
 
 The fetch script downloads the test data of web-platform-tests and the
-labels of the Encoding Standard into `dev-resources/` (which Git ignores),
-at the versions that the library follows. Without these files the
-conformance tests have nothing to check.
+Encoding Standard into `dev-resources/` (which Git ignores) at the
+versions that the library follows. Without these files the conformance
+tests have nothing to check.
 
 The public namespaces are the root and `patterns`. The internal ones are
 under `impl`:
 
-- `impl.parser`, which parses and writes MIME types and splits the values
-  of a header
+- `impl.parser`, which parses and serializes MIME types and splits the
+  values of a header
 - `impl.labels`, the labels of the Encoding Standard
 - `impl.decoding`, the decoders behind `mime/decode`
 - `impl.bytes`, the bytes on each platform

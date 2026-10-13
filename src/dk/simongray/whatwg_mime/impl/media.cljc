@@ -2,9 +2,9 @@
   "The signatures of MP4, WebM and MP3 without ID3 (MIME Sniffing, sections
   6.2.1 to 6.2.3), each checked in the first `n` bytes of `b`.
 
-  As the standard writes them, its steps for WebM and MP3 reject WPT's own
-  media files. These follow what the steps evidently mean, and cite the
-  standard's issue beside each departure."
+  The standard's steps for WebM and MP3 reject WPT's own media files.
+  These follow what the steps evidently mean, and cite the standard's issue
+  beside each departure."
   (:require [dk.simongray.whatwg-mime.impl.bytes :as bytes]))
 
 (defn- u32
@@ -72,8 +72,8 @@
     (when (< i n)
       (+ i (vint-size b n i)))))
 
-;; MIME Sniffing, section 6.2.2. The standard stops one byte early, so that
-;; webm can't end the bytes, though browsers accept that (whatwg/mimesniff#93).
+;; MIME Sniffing, section 6.2.2. The standard stops one byte early, so webm
+;; can't end the bytes, though browsers accept it there (whatwg/mimesniff#93).
 ;; TODO: offer the fixes of vint-size, padded-webm? and webm? on
 ;; whatwg/mimesniff#146, and a pull request only if an editor asks for one.
 (defn webm?

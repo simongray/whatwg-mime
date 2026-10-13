@@ -1,12 +1,12 @@
 (ns dk.simongray.whatwg-mime
-  "Parse and sniff MIME types the way browsers do, by the MIME Sniffing
-  Standard.
+  "Parse MIME types and sniff resources the way browsers do, by the MIME
+  Sniffing Standard.
 
   A MIME type is a plain map:
 
   - :type and :subtype, in lower case, e.g. \"text\" and \"html\"
   - :parameters, when there are any, a map of lower-case names to values
-    in the order of the text
+    in the order that they're written
 
   The parameters can also be a vector of name-value pairs. Unlike the map,
   it keeps its order when you add a ninth parameter.
@@ -38,8 +38,8 @@
 
 ;; MIME Sniffing, section 4.5
 (defn serialize
-  "The MIME type `m` as text, with each parameter value that isn't a token
-  in quotes.
+  "The MIME type `m` as text, with quotes around each parameter value that
+  isn't a token.
 
       (serialize \"Text/HTML; Charset=\\\"utf-8\\\"; x=(\")
       ;; => \"text/html;charset=utf-8;x=\\\"(\\\"\""
@@ -86,14 +86,14 @@
 (defn decode
   "The text of the bytes `b` in the encoding that `label` names, e.g.
   latin1, or in UTF-8 when it names none. A byte order mark overrides the
-  label and goes.
+  label and isn't part of the text.
 
-  This is a convenience, and no part of the MIME Sniffing Standard. The
-  library decodes windows-1252, the encoding of Latin-1 and ASCII, the same
-  way everywhere. Other encodings go to the platform's decoders
+  This is a convenience, and not part of the MIME Sniffing Standard. The
+  library decodes windows-1252, which browsers use for Latin-1 and ASCII,
+  the same way everywhere. Other encodings use the platform's decoders
   (java.nio.charset on the JVM and TextDecoder in JavaScript), which can
-  differ from the Encoding Standard in a few corners. An encoding that the
-  platform lacks, e.g. ISO-8859-10 on the JVM, decodes as UTF-8.
+  differ from the Encoding Standard. An encoding that the platform lacks,
+  e.g. ISO-8859-10 on the JVM, decodes as UTF-8.
 
       (decode (.getBytes \"Blåbær\" \"windows-1252\") \"latin1\")
       ;; => \"Blåbær\""
@@ -114,14 +114,14 @@
 
 ;; MIME Sniffing, section 4.6
 (defn image?
-  "Whether the MIME type `m` is an image MIME type."
+  "Whether the MIME type `m` is an image type, e.g. image/png."
   [m]
   (= "image" (:type (->mime m))))
 
 ;; MIME Sniffing, section 4.6
 (defn audio-or-video?
-  "Whether the MIME type `m` is of audio or video, application/ogg
-  included."
+  "Whether the MIME type `m` is an audio or video type, including
+  application/ogg."
   [m]
   (let [m (->mime m)]
     (or (contains? #{"audio" "video"} (:type m))
@@ -129,7 +129,8 @@
 
 ;; MIME Sniffing, section 4.6
 (defn font?
-  "Whether the MIME type `m` is a font MIME type."
+  "Whether the MIME type `m` is a font type, e.g. font/woff2 or
+  application/vnd.ms-fontobject."
   [m]
   (let [m (->mime m)]
     (or (= "font" (:type m))
@@ -141,8 +142,7 @@
 
 ;; MIME Sniffing, section 4.6
 (defn zip-based?
-  "Whether the MIME type `m` is a ZIP-based MIME type, e.g. one with a +zip
-  suffix."
+  "Whether the MIME type `m` is based on ZIP, e.g. one with a +zip suffix."
   [m]
   (let [m (->mime m)]
     (boolean (and m (or (subtype-suffix? m "+zip")
@@ -150,7 +150,7 @@
 
 ;; MIME Sniffing, section 4.6
 (defn archive?
-  "Whether the MIME type `m` is an archive MIME type: ZIP, gzip or RAR."
+  "Whether the MIME type `m` is an archive type: ZIP, gzip or RAR."
   [m]
   (contains? #{"application/x-rar-compressed" "application/zip"
                "application/x-gzip"}
@@ -158,8 +158,7 @@
 
 ;; MIME Sniffing, section 4.6
 (defn xml?
-  "Whether the MIME type `m` is an XML MIME type, e.g. one with a +xml
-  suffix."
+  "Whether the MIME type `m` is an XML type, e.g. one with a +xml suffix."
   [m]
   (let [m (->mime m)]
     (boolean (and m (or (subtype-suffix? m "+xml")
@@ -173,7 +172,8 @@
 
 ;; MIME Sniffing, section 4.6
 (defn scriptable?
-  "Whether the MIME type `m` is a scriptable MIME type: XML, HTML or PDF."
+  "Whether the MIME type `m` is one that can hold scripts: XML, HTML or
+  PDF."
   [m]
   (let [m (->mime m)]
     (or (xml? m)
@@ -182,8 +182,8 @@
 
 ;; MIME Sniffing, section 4.6
 (defn javascript?
-  "Whether the MIME type `m` is a JavaScript MIME type, e.g.
-  text/javascript or application/x-javascript."
+  "Whether the MIME type `m` is a JavaScript type, e.g. text/javascript or
+  application/x-javascript."
   [m]
   (contains? #{"application/ecmascript" "application/javascript"
                "application/x-ecmascript" "application/x-javascript"
@@ -195,8 +195,7 @@
 
 ;; MIME Sniffing, section 4.6
 (defn json?
-  "Whether the MIME type `m` is a JSON MIME type, e.g. one with a +json
-  suffix."
+  "Whether the MIME type `m` is a JSON type, e.g. one with a +json suffix."
   [m]
   (let [m (->mime m)]
     (boolean (and m (or (subtype-suffix? m "+json")
@@ -244,7 +243,7 @@
   a seq of strings), or nil when none of them parses.
 
   It's the last value that parses, other than */*. When it has no charset,
-  it takes that of an earlier value with the same essence.
+  it takes the charset of an earlier value with the same essence.
 
       (extract [\"text/html;charset=gbk;a=b\" \"text/html;x=y\"])
       ;; => {:type \"text\" :subtype \"html\"
@@ -255,7 +254,7 @@
 ;; Fetch Standard, section 3.6, "determine nosniff"
 (defn nosniff?
   "Whether the X-Content-Type-Options `values` (a string or a seq of
-  strings) forbid sniffing: whether the first is nosniff, in any case."
+  strings) forbid sniffing: whether the first is nosniff, ignoring case."
   [values]
   (= "nosniff" (some-> (first (split-values values)) parser/ascii-lower-case)))
 
@@ -276,11 +275,11 @@
   "The MIME type that a browser treats a resource as, by its first bytes
   `b` and its `content-type`, with the `opts`:
 
-  - :no-sniff?, when X-Content-Type-Options says nosniff
+  - :no-sniff?, true when X-Content-Type-Options says nosniff
 
   The bytes are a byte array on the JVM and a Uint8Array in ClojureScript.
-  Only the first 1445 count. The Content-Type is its values (as extract
-  takes them), a MIME type or nil.
+  Only the first 1445 count. The Content-Type is the header's values (as
+  extract takes them), a parsed MIME type or nil.
 
   The result is the Content-Type unless it's missing or unknown, or it's an
   image, audio or video type that the bytes contradict. HTML and XML always

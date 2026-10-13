@@ -4,8 +4,8 @@
 
   The bytes are a byte array on the JVM and a Uint8Array in ClojureScript
   (a Node Buffer is one). Only the first 1445 count, so a whole body will
-  do. A function returns a MIME type as text, e.g. image/png, or nil when
-  nothing matches.
+  do. Each function returns a MIME type as text, e.g. image/png, or nil
+  when nothing matches.
 
   A row of a table is a map of:
 
@@ -21,7 +21,7 @@
 
 ;; MIME Sniffing, section 5.2
 (def resource-header-length
-  "The most bytes of a resource that sniffing reads."
+  "The largest number of bytes that sniffing reads from a resource."
   bytes/max-header-length)
 
 (defn- hex
@@ -118,7 +118,7 @@
 
 ;; MIME Sniffing, section 7.1, step 2
 (def unknown-patterns
-  "The table of PostScript and the byte order marks of text, which
+  "The table of PostScript and of text with a byte order mark, which
   unknown-type always tries."
   [(row "25 21 50 53 2D 41 64 6F 62 65 2D"
         "FF FF FF FF FF FF FF FF FF FF FF" #{} "application/postscript")
@@ -204,8 +204,8 @@
 
 ;; MIME Sniffing, section 7.1
 (defn unknown-type
-  "The type of a resource of unknown type, by its first bytes `b`, with
-  HTML, XML and PDF among the candidates when `scriptable?`.
+  "The MIME type of a resource whose type is unknown, by its first bytes
+  `b`. HTML, XML and PDF are among the candidates only when `scriptable?`.
 
   When no table matches, it's text/plain, or application/octet-stream when
   the bytes hold a control other than tab, LF, FF, CR or ESC."

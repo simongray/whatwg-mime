@@ -1,7 +1,7 @@
 (ns dk.simongray.whatwg-mime.bench
-  "Benchmarks of reading a Content-Type and sniffing what a crawler
-  fetches, timed by criterium on the JVM and by the clock in Node. On the
-  JVM, clj-async-profiler draws flame graphs.
+  "Benchmarks of reading a Content-Type, and of sniffing and decoding what
+  a crawler fetches, timed by criterium on the JVM and by the clock in
+  Node. On the JVM, clj-async-profiler draws flame graphs.
 
       clojure -M:bench -m dk.simongray.whatwg-mime.bench
       clojure -M:cljs release bench && node target/bench.js

@@ -52,9 +52,9 @@
 
 #?(:clj
    (defn- with-unmapped-bytes
-     "The text `s`, which Java's windows-1252 decoded from the bytes `b` from
-     `start`, with the character of the standard's index in place of each
-     U+FFFD."
+     "The text `s`, which Java's windows-1252 decoded from the bytes `b`
+     starting at `start`, with the character of the standard's index in
+     place of each U+FFFD."
      [^String s b ^long start]
      (let [cs (.toCharArray s)]
        (dotimes [i (alength cs)]
@@ -110,7 +110,7 @@
 ;; Encoding Standard, section 6, "decode"
 (defn decode
   "The text of the bytes `b` in `encoding`, or in UTF-8 when it's nil,
-  unless a byte order mark names another. The mark goes."
+  unless a byte order mark names another. The mark isn't part of the text."
   [b encoding]
   (let [[bom-encoding bom-length] (bom b)
         encoding                  (or bom-encoding encoding "UTF-8")

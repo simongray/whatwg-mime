@@ -4,7 +4,7 @@
 
 ;; MIME Sniffing, section 5.2
 (def max-header-length
-  "The most bytes of a resource that sniffing reads."
+  "The largest number of bytes that sniffing reads from a resource."
   1445)
 
 (defn length

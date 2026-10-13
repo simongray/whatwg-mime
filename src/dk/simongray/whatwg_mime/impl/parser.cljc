@@ -2,8 +2,9 @@
   "Parsing and serializing MIME types (MIME Sniffing, sections 4.3 to 4.5),
   and splitting the values of a header (Fetch, section 2.2).
 
-  The parser steps through UTF-16 code units rather than code points. Every
-  character that it looks for is in Latin-1, which no surrogate is."
+  The parser steps through UTF-16 code units rather than code points.
+  That's safe, since every character that it looks for is in Latin-1 and
+  so can't be half of a surrogate pair."
   (:require [clojure.string :as str]))
 
 (defn- length
