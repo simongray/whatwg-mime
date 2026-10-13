@@ -74,8 +74,6 @@
 
 ;; MIME Sniffing, section 6.2.2. The standard stops one byte early, so webm
 ;; can't end the bytes, though browsers accept it there (whatwg/mimesniff#93).
-;; TODO: offer the fixes of vint-size, padded-webm? and webm? on
-;; whatwg/mimesniff#146, and a pull request only if an editor asks for one.
 (defn webm?
   "Whether the first `n` bytes of `b` start with an EBML header whose
   DocType, in its first 38 bytes, is webm."
@@ -138,9 +136,9 @@
 ;; MIME Sniffing, section 6.2.3, "parse an mp3 frame" and "compute an mp3
 ;; frame size". The standard swaps the two tables of bit rates, gives the
 ;; scale of 72 to the reserved version 1 rather than to MPEG-2 and 2.5, and
-;; divides by the sample rate before halving or quartering it. This follows
-;; Firefox's mp3sniff.c, which the steps come from, and like it tells MPEG-1
-;; by the low bit of the version.
+;; divides by the sample rate before halving or quartering it
+;; (whatwg/mimesniff#168). This follows Firefox's mp3sniff.c, which the
+;; steps come from, and like it tells MPEG-1 by the low bit of the version.
 (defn- frame-size
   "The size in bytes of the MPEG audio layer III frame whose header is at
   `s` in the bytes `b`."
@@ -156,9 +154,8 @@
        (bits y 0x02 1))))
 
 ;; MIME Sniffing, section 6.2.3. The standard compares the frame size with
-;; s - length rather than length - s, which no frame passes.
-;; TODO: offer the fixes of mp3-header?, frame-size and mp3? on
-;; whatwg/mimesniff#168, and a pull request only if an editor asks for one.
+;; s - length rather than length - s, which no frame passes
+;; (whatwg/mimesniff#70).
 (defn mp3?
   "Whether the first `n` bytes of `b` start with two frames of MPEG audio
   layer III."
