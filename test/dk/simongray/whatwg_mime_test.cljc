@@ -4,6 +4,7 @@
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
             [dk.simongray.whatwg-mime :as mime]
+            #?(:cljs [dk.simongray.whatwg-mime.impl.decoding :as decoding])
             [dk.simongray.whatwg-mime.impl.labels :as labels]
             [dk.simongray.whatwg-mime.octets :refer [octets]]
             [dk.simongray.whatwg-mime.test-data :as test-data]))
@@ -84,6 +85,10 @@
     (is (= (text-of (for [x (range 256)] (if (< x 0x80) x (index (- x 0x80)))))
            (mime/decode (apply octets (range 256)) "latin1"))
         "windows-1252 by the index of the Encoding Standard, on every platform"))
+  #?(:cljs
+     (let [b (js/Uint8Array.from (clj->js (map #(mod % 256) (range 20000))))]
+       (is (= (mime/decode b "latin1") (decoding/windows-1252-by-byte b 0 20000))
+           "and by the byte, where TextDecoder knows only UTF-8, across chunks")))
   (testing "a byte order mark overrides the label and goes, but a second one stays"
     (is (= "hi" (mime/decode (octets [0xEF 0xBB 0xBF] "hi") "latin1")))
     (is (= "hi" (mime/decode (octets [0xFF 0xFE] "h" 0 "i" 0) "utf-8")))

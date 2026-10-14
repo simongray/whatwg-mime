@@ -90,7 +90,8 @@
 
   This is a convenience, and not part of the MIME Sniffing Standard. The
   library decodes windows-1252, which browsers use for Latin-1 and ASCII,
-  the same way everywhere. Other encodings use the platform's decoders
+  the same way everywhere, even where TextDecoder knows only UTF-8, e.g.
+  in React Native. Other encodings use the platform's decoders
   (java.nio.charset on the JVM and TextDecoder in JavaScript), which can
   differ from the Encoding Standard. An encoding that the platform lacks,
   e.g. ISO-8859-10 on the JVM, decodes as UTF-8.

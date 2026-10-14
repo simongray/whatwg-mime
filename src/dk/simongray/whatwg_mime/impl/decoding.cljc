@@ -45,6 +45,26 @@
      (.replace s (js/RegExp. "[\u0080-\u009F]" "g")
                #(.fromCharCode js/String (windows-1252-code (.charCodeAt % 0))))))
 
+#?(:cljs
+   (def windows-1252-decoder
+     "The platform's decoder of windows-1252, or nil in a runtime whose
+     TextDecoder knows only UTF-8, e.g. Hermes in React Native."
+     (try
+       (js/TextDecoder. "windows-1252" #js {:ignoreBOM true})
+       (catch :default _ nil))))
+
+#?(:cljs
+   (defn windows-1252-by-byte
+     "The text of the bytes `b` from `start` to `end` in windows-1252, a
+     character for each byte, in chunks that fit the arguments of a call."
+     [b start end]
+     (let [chunk 8192]
+       (apply str
+              (for [i (range start end chunk)]
+                (.apply (.-fromCharCode js/String) nil
+                        (.map (js/Uint16Array.from (.subarray b i (min end (+ i chunk))))
+                              windows-1252-code)))))))
+
 #?(:clj
    (def ^java.nio.charset.Charset java-windows-1252
      "Java's windows-1252, which leaves five bytes of the standard's unmapped."
@@ -75,9 +95,10 @@
              (if (neg? (.indexOf s (int 0xFFFD)))
                s
                (with-unmapped-bytes s b start)))
-     :cljs (with-windows-1252-c1
-             (.decode (js/TextDecoder. "windows-1252" #js {:ignoreBOM true})
-                      (.subarray b start end)))))
+     :cljs (if windows-1252-decoder
+             (with-windows-1252-c1
+               (.decode windows-1252-decoder (.subarray b start end)))
+             (windows-1252-by-byte b start end))))
 
 ;; the names of the Encoding Standard that Java spells another way, where
 ;; GBK's decoder is gb18030's (section 10.1.1)

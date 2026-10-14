@@ -34,7 +34,7 @@ The library needs Clojure 1.11+ and Java 11+. Add the latest release from
 your `deps.edn`:
 
 ```clojure
-dk.simongray/whatwg-mime {:mvn/version "0.2.1"}
+dk.simongray/whatwg-mime {:mvn/version "0.2.2"}
 ```
 
 For changes that aren't released yet, use the SHA of the latest commit on
